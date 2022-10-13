@@ -1,0 +1,27 @@
+.button {
+    width: 100%;
+    max-width: 200px;
+    padding: 15px;
+    background-color: rgb(35, 255, 27);
+    border: 1px solid rgb(0, 0, 0);
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    transition: color font-size 500ms;
+    cursor: pointer;
+}
+
+.button:hover,
+.button:focus {
+    transition: font-size 500ms;
+    background-color: rgb(251, 255, 0);
+    color: rgb(255, 0, 0);
+    font-size: 21px;
+}
+
+@media screen and (min-width: 768px) {
+    .button {
+        font-size: 20px;
+    }
+}
