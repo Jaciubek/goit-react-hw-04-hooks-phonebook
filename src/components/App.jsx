@@ -1,35 +1,55 @@
 import styles from './App.module.css';
-import Section from 'components/Section/Section';
+import { Section } from 'components/Section/Section';
 import ContactForm from 'components/ContactForm/ContactForm';
 import { nanoid } from 'nanoid';
-import React, { Component } from 'react';
-import ContactList from 'components/ContactList/ContactList';
-import Notification  from 'components/Notification/Notification';
-import Filter from 'components/Filter/Filter';
+import React, { useState, useEffect } from 'react';
+import { ContactList } from './ContactList/ContactList';
+import { Notification } from 'components/Notification/Notification';
+import { Filter } from './Filter/Filter';
 import { load, save } from 'services/localStorage';
 import contactsItems from 'data/contactsItems';
 
 const localStorageKey = 'contacts';
 
-class App extends Component {
-  state = {
-    contacts: [],
-    filter: '',
-  };
+export const App = () => {
+  const [contacts, setContacts] = useState([]);
+  const [filter, setFilter] = useState('');
 
-   getContactFromLocalStorage = () => {
-    const localPhonebookContacts = load(localStorageKey);
-    return localPhonebookContacts
-      ? localPhonebookContacts
-      : this.setContactsInLocalStorage(contactsItems);
-  };
+  const { appWrapper } = styles;
 
-  setContactsInLocalStorage = contactsArray => {
+  const setContactsInLocalStorage = contactsArray => {
     save(localStorageKey, contactsArray);
   };
 
-  onSubmit = ({ name, number }) => {
-    const { contacts } = this.state;
+  const getContactFromLocalStorage = () => {
+    const localPhonebookContacts = load(localStorageKey);
+    return localPhonebookContacts
+      ? localPhonebookContacts
+      : setContactsInLocalStorage(contactsItems);
+  };
+  const handleFilter = e => {
+    setFilter(e.target.value);
+  };
+
+  const setFilterContacts = (filterValue, contactsArray) => {
+    if (!filterValue) {
+      return contactsArray;
+    } else {
+      return contactsArray.filter(contact => {
+        return contact.name
+          .toLocaleLowerCase()
+          .includes(filterValue.toLocaleLowerCase());
+      });
+    }
+  };
+
+  const removeContact = id => {
+    const newContactList = contacts.filter(contact => contact.id !== id);
+    save(localStorageKey, newContactList);
+    setContacts(newContactList);
+  };
+
+  const onSubmit = ({ name, number }) => {
     const newContact = {
       id: nanoid(),
       name,
@@ -44,72 +64,40 @@ class App extends Component {
       const filteredNumber = contacts.filter(
         contact => contact.number === number
       )[0].name;
-      console.log(filteredNumber);
       alert(`${number} is already in contact with ${filteredNumber} `);
       return;
     }
     const newContactArray = [newContact, ...contacts];
 
-    this.setContactsInLocalStorage(newContactArray);
-    this.setState(() => ({
-      contacts: newContactArray,
-    }));
+    setContactsInLocalStorage(newContactArray);
+    setContacts(newContactArray);
   };
 
-  handleFilter = e => {
-    this.setState({ filter: e.target.value });
-  };
+  useEffect(() => {
+    const myPhonebookContacts = getContactFromLocalStorage();
+    setContacts(myPhonebookContacts);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  removeContact = id => {
-    const newContactList = this.state.contacts.filter(
-      contact => contact.id !== id
-    );
-    save(localStorageKey, newContactList);
-    this.setState({ ...this.state, contacts: newContactList });
-  };
-
-  setFilterContacts = (filterValue, contactsArray) => {
-    if (!filterValue) {
-      return contactsArray;
-    } else {
-      return contactsArray.filter(contact => {
-        return contact.name
-          .toLocaleLowerCase()
-          .includes(filterValue.toLocaleLowerCase());
-      });
-    }
-  };
-
-  componentDidMount() {
-    const myPhonebookContacts = this.getContactFromLocalStorage();
-    this.setState(oldState => ({ ...oldState, contacts: myPhonebookContacts }));
-  }
-
-  render() {
-    const { appWrapper } = styles;
-    const { filter } = this.state;
-    const phonebookContacts = this.getContactFromLocalStorage();
-    return (
-      <div className={appWrapper}>
-        <Section title="Phonebook">
-          <ContactForm onSubmit={this.onSubmit} />
-        </Section>
-        <Section title="Contacts">
-          {phonebookContacts.length > 0 ? (
-            <>
-              <Filter onChange={this.handleFilter} />
-              <ContactList
-                contacts={this.setFilterContacts(filter, phonebookContacts)}
-                removeContact={this.removeContact}
-              />
-            </>
-          ) : (
-            <Notification message="There is no contacts !" />
-          )}
-        </Section>
-      </div>
-    );
-  }
-}
-
-export default App;
+  const phonebookContacts = getContactFromLocalStorage();
+  return (
+    <div className={appWrapper}>
+      <Section title="Phonebook">
+        <ContactForm onSubmit={onSubmit} />
+      </Section>
+      <Section title="Contacts">
+        {phonebookContacts.length > 0 ? (
+          <>
+            <Filter onChange={handleFilter} />
+            <ContactList
+              contacts={setFilterContacts(filter, phonebookContacts)}
+              removeContact={removeContact}
+            />
+          </>
+        ) : (
+          <Notification message="There is no contacts !" />
+        )}
+      </Section>
+    </div>
+  );
+};
